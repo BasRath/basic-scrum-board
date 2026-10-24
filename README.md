@@ -5,6 +5,13 @@ mascot. Create tickets, edit descriptions, move work through **To Do**, **In
 Progress**, and **Done**, and delete finished work. Your successful changes appear
 immediately; other collaborators' changes are fetched every 30 seconds.
 
+Creating a ticket requires a non-blank title and description. Drag a ticket onto
+another lane to change its status, or open it and click **Edit ticket** to change
+its title, description, and status. Edits are saved only with **Save changes**;
+**Cancel** discards the draft. Use the **···** button on a column to sort it
+newest first (default), oldest first, or by title A–Z / Z–A; each column keeps
+its own order for the current session.
+
 ## Run locally
 
 Requires Node.js 20.9+ and npm.
@@ -32,7 +39,9 @@ on restart.
 
 The server stores the board in `scrum-board/board.json`. Reads bypass Blob's CDN
 cache. Conditional ETag writes retry concurrent changes, including first-board
-creation, so simultaneous creates get distinct incremental IDs. IDs start at 1
+creation, so simultaneous creates get distinct incremental IDs. The board is read
+uncompressed so Blob returns a strong ETag; compressed reads return weak ETags
+that never satisfy conditional writes. IDs start at 1
 and are never reused after deletion. Stale ticket edits return 409 rather than
 overwriting someone else's work. This small-board design rewrites one JSON
 document per change (maximum 5,000 active tickets); it is not intended as a
@@ -53,8 +62,9 @@ cached.
 | DELETE | `/api/tickets/1` | Returns 204, or 404 if absent |
 
 POST/PATCH require `Content-Type: application/json`. Titles are trimmed and must
-contain 1–160 characters; descriptions are optional on creation and limited to
-10,000 characters. Status is `todo`, `in-progress`, or `done`. Each ticket has
+contain 1–160 characters; descriptions are required on creation, cannot be blank
+when supplied in an update, and are limited to 10,000 characters.
+Status is `todo`, `in-progress`, or `done`. Each ticket has
 `id`, `title`, `description`, `status`, `createdAt`, and `updatedAt` (UTC ISO dates).
 Unknown fields are rejected; request bodies are limited to 64 KiB.
 

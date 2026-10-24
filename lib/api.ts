@@ -7,6 +7,7 @@ export function json(data: unknown, status = 200) {
 
 export function failure(error: unknown) {
   if (error instanceof ApiError) return json({ error: error.message }, error.status);
+  console.error("Unexpected ticket API error", error);
   return json({ error: "Storage is temporarily unavailable. Please try again." }, 503);
 }
 
@@ -65,10 +66,10 @@ export async function readInput(request: Request, editing = false) {
     data.title = input.title.trim();
   }
   if (!editing || "description" in input) {
-    if (input.description !== undefined && typeof input.description !== "string") {
-      throw new ApiError(400, "Description must be text.");
+    if (typeof input.description !== "string" || !input.description.trim()) {
+      throw new ApiError(400, "Description is required and must contain text.");
     }
-    const description = (input.description as string | undefined) ?? "";
+    const description = input.description;
     if (description.length > 10000) throw new ApiError(400, "Description exceeds 10,000 characters.");
     data.description = description;
   }
